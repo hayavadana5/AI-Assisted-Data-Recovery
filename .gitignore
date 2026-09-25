@@ -211,3 +211,7 @@ cases_output/
 scratch_*.py
 *.db
 *.db-journal
+
+# Node dependencies
+node_modules/
+web/node_modules/
