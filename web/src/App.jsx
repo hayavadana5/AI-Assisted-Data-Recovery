@@ -649,7 +649,7 @@ useEffect(() => {
         onGoCommandCenter={navigateToCommandCenter}
       />
 
-      {(isScanProgressOpen || scanning) && (
+      {(isScanProgressOpen ) && (
         <ScanProgress
           progress={progress}
           logs={logs}
