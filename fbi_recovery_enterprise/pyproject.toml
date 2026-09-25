@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fbi_recovery"
+version = "1.0.0"
+description = "Open-source forensic imaging & carving suite"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = ["tqdm", "rich"]
+
+[project.scripts]
+fbi-recover = "fbi_recovery.recover:main"
