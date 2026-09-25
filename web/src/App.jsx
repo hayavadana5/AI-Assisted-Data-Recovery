@@ -72,36 +72,82 @@ export default function App() {
   }, [inititateScan]);
 
   /* ── Navigation Stack Handlers ── */
-  const navigateTo = useCallback((target) => {
-    setNavHistory(prev => {
-      if (prev[prev.length - 1] === target) return prev;
-      return [...prev, target];
-    });
-    setActiveWorkspace(target);
-  }, []);
+  /* ── Navigation Stack + Browser History ── */
 
-  const navigateBack = useCallback(() => {
-    setNavHistory(prev => {
-      if (prev.length <= 1) {
-        setActiveWorkspace('overview');
-        return ['overview'];
-      }
-      const nextHist = [...prev];
-      nextHist.pop();
-      const prevWs = nextHist[nextHist.length - 1] || 'overview';
-      setActiveWorkspace(prevWs);
-      return nextHist;
-    });
-  }, []);
+const navigateTo = useCallback((target) => {
+  setNavHistory(prev => {
+    if (prev[prev.length - 1] === target) return prev;
 
-  const navigateToCommandCenter = useCallback(() => {
-    setActiveWorkspace('overview');
-    setIsCaseSelectorOpen(false);
-    setIsScanProgressOpen(false);
-    setSelectedHexFile(null);
-    setNavHistory(['overview']);
-  }, []);
+    const nextHistory = [...prev, target];
 
+    // Keep browser history synchronized with AEGIS workspace navigation.
+    window.history.pushState(
+      { aegisWorkspace: target },
+      '',
+      `#${target}`
+    );
+
+    return nextHistory;
+  });
+
+  setActiveWorkspace(target);
+}, []);
+
+const navigateBack = useCallback(() => {
+  // Let the browser history drive the navigation.
+  if (window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+
+  setActiveWorkspace('overview');
+  setNavHistory(['overview']);
+}, []);
+
+const navigateToCommandCenter = useCallback(() => {
+  setActiveWorkspace('overview');
+  setIsCaseSelectorOpen(false);
+  setIsScanProgressOpen(false);
+  setSelectedHexFile(null);
+  setNavHistory(['overview']);
+
+  // Replace the current browser URL instead of adding another history entry.
+  window.history.replaceState(
+    { aegisWorkspace: 'overview' },
+    '',
+    '#overview'
+  );
+}, []);
+
+/* Handle Chrome/Edge/Firefox Back and Forward buttons */
+useEffect(() => {
+  const handleBrowserNavigation = (event) => {
+    const workspace = event.state?.aegisWorkspace;
+
+    if (workspace) {
+      setActiveWorkspace(workspace);
+
+      setNavHistory(prev => {
+        const index = prev.lastIndexOf(workspace);
+
+        if (index >= 0) {
+          return prev.slice(0, index + 1);
+        }
+
+        return [...prev, workspace];
+      });
+    } else {
+      setActiveWorkspace('overview');
+      setNavHistory(['overview']);
+    }
+  };
+
+  window.addEventListener('popstate', handleBrowserNavigation);
+
+  return () => {
+    window.removeEventListener('popstate', handleBrowserNavigation);
+  };
+}, []);
   /* ── Open Demo Evidence Handler ── */
   const handleOpenDemoEvidence = useCallback(async () => {
     const DEMO_CASE_ID = 'CAS-DEMO-SYNTHETIC-001';
