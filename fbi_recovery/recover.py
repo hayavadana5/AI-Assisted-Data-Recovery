@@ -10,20 +10,33 @@ def sleuthkit_extract(image, out_dir):
     with open(csv_log, 'w', newline='') as log:
         writer = csv.writer(log)
         writer.writerow(['inode', 'type', 'path', 'exported'])
-        # list deleted
-        fls = subprocess.check_output(['fls', '-r', '-d', image], text=True)
+        # list deleted — gracefully handle missing fls or no-filesystem images
+        try:
+            fls = subprocess.check_output(['fls', '-r', '-d', image], text=True,
+                                          stderr=subprocess.PIPE)
+        except FileNotFoundError:
+            print('[!] fls binary not found – skipping SleuthKit extraction')
+            return
+        except subprocess.CalledProcessError as e:
+            print(f'[!] fls failed (exit {e.returncode}) – image may lack a filesystem')
+            return
         for line in fls.splitlines():
             parts = line.split('\t')
             if len(parts) < 2:
                 continue
-            inode = parts[1].split(':')[0]
-            ftype = parts[0][0]
+            # BUG #1 FIX: inode is in parts[0] (after type prefix), NOT parts[1]
+            inode_field = parts[0].split()
+            if len(inode_field) < 2:
+                continue
+            inode = inode_field[-1].split(':')[0]
+            ftype = parts[0].strip()[0]
             relpath = parts[-1]
             if ftype in ('r', 'd'):
                 try:
                     dst = pathlib.Path(out_dir)/relpath.strip('/')
                     dst.parent.mkdir(parents=True, exist_ok=True)
-                    subprocess.check_call(['icat', image, inode], stdout=open(dst, 'wb'))
+                    with open(dst, 'wb') as out_f:
+                        subprocess.check_call(['icat', image, inode], stdout=out_f)
                     writer.writerow([inode, ftype, relpath, str(dst)])
                 except:
                     writer.writerow([inode, ftype, relpath, 'FAILED'])

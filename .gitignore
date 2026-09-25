@@ -205,3 +205,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# AEGIS runtime/generated data
+cases_output/
+scratch_*.py
+*.db
+*.db-journal

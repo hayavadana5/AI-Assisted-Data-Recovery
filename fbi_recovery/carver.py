@@ -15,6 +15,10 @@ def _carve_single(path, out_dir, sig, seen_hash, limit_mb):
     with open(path, 'rb') as f:
         offset = 0
         while True:
+            # BUG #2 FIX: re-seek to the chunk-aligned offset before reading.
+            # Without this, f.read(max_size) during match extraction advances
+            # the cursor far past the current chunk boundary.
+            f.seek(offset)
             chunk = f.read(CHUNK)
             if not chunk:
                 break

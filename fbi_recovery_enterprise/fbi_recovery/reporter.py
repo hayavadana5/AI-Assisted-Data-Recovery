@@ -11,8 +11,12 @@ def sign_and_stamp(csv_path: pathlib.Path) -> None:
         log.info("GPG signature: %s", asc)
     except FileNotFoundError:
         log.warning("gpg not found – skipping signature")
+    except subprocess.CalledProcessError as e:
+        log.warning("gpg signing failed (exit %d) – skipping signature", e.returncode)
     try:
         subprocess.check_call(["tsa-client", "--in", str(csv_path), "--out", str(tsr)])
         log.info("RFC-3161 token: %s", tsr)
     except FileNotFoundError:
         log.warning("tsa-client not found – skipping time-stamp")
+    except subprocess.CalledProcessError as e:
+        log.warning("tsa-client failed (exit %d) – skipping time-stamp", e.returncode)
